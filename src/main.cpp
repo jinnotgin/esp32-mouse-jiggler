@@ -1,7 +1,14 @@
 #include <Arduino.h>
 #include <BleMouse.h>
+#include <Preferences.h>
 
 #define DEVICE_NAME "Microsoft Ergonomic Mouse"
+#define DEVICE_MANUFACTURER "Microsoft"
+
+#define BATTERY_LEVEL 84
+#define REALISTIC_BATTERY true
+#define CONNECTIONS_PER_BATTERY_PERCENT 4
+#define BATTERY_MIN_LEVEL 15
 
 #define X_RANDOM_RANGE 5
 #define Y_RANDOM_RANGE 5
@@ -21,7 +28,12 @@ bool enableRightClick = false;
 #define USE_LED true  // Set to false if your board doesn't have an LED or you don't want to use it
 #define LED_PIN 2     // Change this to match your board's LED pin, if different
 
-BleMouse bleMouse(DEVICE_NAME);
+Preferences prefs;
+uint8_t currentBatteryLevel = BATTERY_LEVEL;
+uint8_t bleConnectionCount = 0;
+bool batteryConnectionCounted = false;
+
+BleMouse bleMouse(DEVICE_NAME, DEVICE_MANUFACTURER, BATTERY_LEVEL);
 
 unsigned long lastMoveTime = 0;
 unsigned long lastClickTime = 0;
@@ -42,10 +54,14 @@ void checkButton();
 void updateLED();
 void printConfig();
 void wiggleMouse();
+void setupBatterySpoofing();
+void updateBatteryOnBleConnected();
+void saveBatteryState();
 
 void setup() {
   Serial.begin(115200);
   Serial.println("Starting BLE Mouse Emulator");
+  setupBatterySpoofing();
 
   pinMode(BOOT_BUTTON, INPUT_PULLUP);
 
@@ -54,6 +70,7 @@ void setup() {
   }
 
   bleMouse.begin();
+  bleMouse.setBatteryLevel(currentBatteryLevel);
 
   // Initialize random intervals
   moveInterval = random(MIN_MOVE_INTERVAL, MAX_MOVE_INTERVAL);
@@ -67,6 +84,8 @@ void loop() {
   checkButton();
 
   if (bleMouse.isConnected()) {
+    updateBatteryOnBleConnected();
+
     if (!wasConnected) {
       Serial.println("BLE Mouse connected");
       wasConnected = true;
@@ -92,6 +111,7 @@ void loop() {
       }
     }
   } else {
+    batteryConnectionCounted = false;
     checkConnectionAndReset();
   }
 }
@@ -184,4 +204,65 @@ void wiggleMouse() {
     bleMouse.move(-x + random(-5, 6), -y + random(-5, 6));
     delay(wiggleDelay);
   }
+}
+
+void setupBatterySpoofing() {
+  if (REALISTIC_BATTERY) {
+    prefs.begin("jiggler", false);
+    currentBatteryLevel = prefs.getUChar("battery", BATTERY_LEVEL);
+    bleConnectionCount = prefs.getUChar("connCount", 0);
+
+    if (currentBatteryLevel > 100) {
+      currentBatteryLevel = BATTERY_LEVEL;
+    }
+
+    if (currentBatteryLevel < BATTERY_MIN_LEVEL) {
+      currentBatteryLevel = BATTERY_MIN_LEVEL;
+    }
+
+    if (bleConnectionCount >= CONNECTIONS_PER_BATTERY_PERCENT) {
+      bleConnectionCount = 0;
+    }
+
+    saveBatteryState();
+  } else {
+    currentBatteryLevel = BATTERY_LEVEL;
+    prefs.begin("jiggler", false);
+    prefs.clear();
+    prefs.end();
+  }
+}
+
+void updateBatteryOnBleConnected() {
+  if (!REALISTIC_BATTERY || batteryConnectionCounted) {
+    return;
+  }
+
+  batteryConnectionCounted = true;
+  bleConnectionCount++;
+
+  if (bleConnectionCount >= CONNECTIONS_PER_BATTERY_PERCENT) {
+    bleConnectionCount = 0;
+    if (currentBatteryLevel > BATTERY_MIN_LEVEL) {
+      currentBatteryLevel--;
+    } else {
+      currentBatteryLevel = 100;
+    }
+  }
+
+  bleMouse.setBatteryLevel(currentBatteryLevel);
+  saveBatteryState();
+  Serial.printf("Battery spoof: %u%%, connection count: %u/%u\n",
+                currentBatteryLevel,
+                bleConnectionCount,
+                CONNECTIONS_PER_BATTERY_PERCENT);
+}
+
+void saveBatteryState() {
+  if (!REALISTIC_BATTERY) {
+    return;
+  }
+
+  prefs.putUChar("battery", currentBatteryLevel);
+  prefs.putUChar("connCount", bleConnectionCount);
 }
