@@ -6,8 +6,10 @@
 #define DEVICE_MANUFACTURER "Microsoft"
 
 #define BATTERY_LEVEL 84
+
+// Configs for "realistic" battery tracking
 #define REALISTIC_BATTERY true
-#define CONNECTIONS_PER_BATTERY_PERCENT 4
+#define CONNECTIONS_PER_BATTERY_PERCENT 12    // Assumes roughly 3 host-side BLE reconnects per day over a 12-month battery life.
 #define BATTERY_MIN_LEVEL 15
 
 #define X_RANDOM_RANGE 5

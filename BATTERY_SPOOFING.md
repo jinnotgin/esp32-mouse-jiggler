@@ -8,7 +8,7 @@ The feature is controlled by:
 
 ```cpp
 #define REALISTIC_BATTERY                  true
-#define CONNECTIONS_PER_BATTERY_PERCENT    4
+#define CONNECTIONS_PER_BATTERY_PERCENT    12
 #define BATTERY_MIN_LEVEL                  15
 ```
 
@@ -27,19 +27,22 @@ If no saved values exist, the firmware starts from `BATTERY_LEVEL` and a connect
 
 ## Connection Counting
 
-The battery model assumes roughly one BLE connection per day. To approximate a 12-month AA battery life from `100%` to `15%`, the firmware needs to distribute 85 percentage drops across about 365 daily connection sessions:
+The battery model assumes roughly three counted BLE connection sessions per day. Hosts can reconnect BLE HID devices for idle and power-management reasons, so the firmware should not treat every reconnect as a full day of battery use.
+
+To approximate a 12-month AA battery life from `100%` to `15%`, the firmware needs to distribute 85 percentage drops across about 365 days. At three counted connection sessions per day, that gives about 1095 counted connection sessions:
 
 ```text
-365 days / 85 percentage drops = 4.29 connections per 1% drop
+365 days * 3 connections per day = 1095 connections
+1095 connections / 85 percentage drops = 12.88 connections per 1% drop
 ```
 
-Because the firmware stores whole connection counts, it uses `4` connections per 1% drop. That reaches the minimum level after about 340 daily connection sessions:
+Because the firmware stores whole connection counts, it uses `12` connections per 1% drop. That reaches the minimum level after about 1020 counted connection sessions:
 
 ```text
-85 percentage drops * 4 connections = 340 connections
+85 percentage drops * 12 connections = 1020 connections
 ```
 
-This is slightly under 12 months, but it keeps the spoofed battery from looking too optimistic. Using `5` connections per drop would stretch the same range to 425 daily connections, which is noticeably longer than 12 months.
+At three counted connections per day, that is about 340 days. This is slightly under 12 months, but it keeps the spoofed battery from looking too optimistic. Using `13` connections per drop would stretch the same range to about 368 days.
 
 The helper `updateBatteryOnBleConnected()` is called from `loop()` after the BLE connection check. It is not a BLE callback. Instead, the code uses `batteryConnectionCounted` as an edge detector:
 
