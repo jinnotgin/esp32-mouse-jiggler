@@ -42,8 +42,17 @@ To customize the behaviour of your ESP32 BLE Jiggler, you can modify the followi
 
 Device Name: Change the name that appears in the OS. Note: MacOS doesn't seem to care about this.
    ```cpp
-   #define DEVICE_NAME "Microsoft Ergonomic Mouse"
+   #define DEVICE_NAME "Bluetooth Ergonomic Mouse"
    ```
+
+Battery Spoofing: Change the advertised battery level and realistic battery tracking behavior.
+   ```cpp
+   #define BATTERY_LEVEL 84
+   #define REALISTIC_BATTERY true
+   #define CONNECTIONS_PER_BATTERY_PERCENT 12
+   #define BATTERY_MIN_LEVEL 15
+   ```
+   When realistic battery tracking is enabled, the firmware stores the fake battery level and BLE connection count in ESP32 Preferences. See `BATTERY_SPOOFING.md` for details.
 
 Initial Feature State: Set these to `true` or `false` to enable or disable features on startup.
    ```cpp
@@ -87,7 +96,7 @@ LED Configuration:
 ### Additions
 
 * Device Emulation:
-    * Emulates a "Microsoft Ergonomic Mouse" mouse.
+    * Emulates a "Bluetooth Ergonomic Mouse" mouse.
 * Randomized Movement:
     * Uses random intervals for mouse movements (between 5 and 30 seconds).
     * Random movement in X and Y directions (range: -5 to 5 pixels).
@@ -105,6 +114,8 @@ LED Configuration:
     * Performs a "wiggle" movement upon successful connection.
 * Enhanced Logging:
     * Extensive serial logging for debugging and status updates.
+* Realistic Battery Spoofing:
+    * Persists fake battery level and connection count using ESP32 Preferences.
 * Simplified Board Support:
     * Uses generic ESP32 board configuration in platformio.ini.
 
@@ -114,8 +125,6 @@ LED Configuration:
     * Removed OLED display support and related code.
 * Multi-Button Interface:
     * Removed support for multiple buttons, now uses single BOOT button.
-* Preferences Storage:
-    * Removed use of preferences library for storing settings.
 * Fixed Movement Patterns:
     * Removed predetermined "jiggle" patterns
 * MAC Address Customization:
@@ -123,8 +132,7 @@ LED Configuration:
 
 ## Credits
 
-* Original project forked from [tornado67/DroChill](https://github.com/perryflynn/mouse-jiggler)
-* This version forked from [perryflynn/mouse-jiggler](https://github.com/perryflynn/mouse-jiggler)
+* This version forked and updated from [monstermuffin/esp32-mouse-jiggler](https://github.com/monstermuffin/esp32-mouse-jiggler)
 
 
 ## License
