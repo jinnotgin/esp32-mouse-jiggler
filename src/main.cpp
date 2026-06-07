@@ -2,7 +2,7 @@
 #include <BleMouse.h>
 #include <Preferences.h>
 
-#define DEVICE_NAME "Microsoft Ergonomic Mouse"
+#define DEVICE_NAME "Bluetooth Ergonomic Mouse"
 #define DEVICE_MANUFACTURER "Microsoft"
 
 #define BATTERY_LEVEL 84
